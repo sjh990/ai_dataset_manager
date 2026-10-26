@@ -1,0 +1,7 @@
+# AI features: auto labeling (OWLv2 / SAM / ViTPose / CLIP) and project model training (RF-DETR)
+# Install PyTorch + torchvision first from https://download.pytorch.org/whl/cu128 (RTX 30/40/50, driver 570+)
+transformers>=4.45
+safetensors>=0.4
+huggingface_hub>=0.25
+accelerate>=0.34
+rfdetr[train]>=1.11

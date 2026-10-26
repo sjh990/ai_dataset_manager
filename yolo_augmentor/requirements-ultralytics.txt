@@ -1,0 +1,2 @@
+# Optional engine for project model training. AGPL-3.0: internal use only, do not ship in a closed product.
+ultralytics>=8.4

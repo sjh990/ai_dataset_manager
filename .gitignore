@@ -1,0 +1,6 @@
+yolo_augmentor/models/
+__pycache__/
+*.pyc
+*.pth
+*.pt
+*.safetensors
