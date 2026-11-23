@@ -149,3 +149,18 @@
 - **requirements.txt**: 패키지 목록과 동작 확인된 버전, 설치 순서 (torch 는 CUDA 12.8 용을 먼저 설치)
 - **.gitignore**: 데이터셋(`datasets/`), 원본 영상(`raw_data/`, mp4 등), AI 가중치 파일(100MB 초과), `last_project.json`, `__pycache__` 제외
 - README 설치 방법 갱신
+- 깃허브 업로드: 팀 레포 `sjh990/ai_dataset_manager` 의 `add-facility-labeler` 브랜치(`facility_labeler/` 폴더), 개인 레포 `sswwd95/facility_labeler` (Private, 이 폴더가 원본)
+- `docs/fence_median_compare.jpg` (펜스, 분리대 비교 이미지, 웹 캡처 포함) 는 업로드 제외
+
+## 다른 PC 설치 (아나콘다 없이)
+- 새 PC에서 박스 AI 학습 때 `pytorch_lightning` 없음 에러 수정: requirements.txt 의 `rfdetr` → `rfdetr[train]` (학습용 추가 패키지 포함)
+- **setup.bat**: 더블클릭 한 번으로 설치 (uv 설치 → `.venv` Python 3.11 → torch CUDA 12.8 → 패키지), `setup.bat cpu` = GPU 없는 PC
+- **requirements.txt** 하나로 통합: 라벨링 PC 환경의 모든 패키지 버전 고정 (위쪽 = 직접 쓰는 패키지, 아래쪽 = 하위 패키지, PC마다 같은 버전 설치)
+- **tools/check_env.py**: 설치 확인 (패키지 import, GPU 인식)
+- run.bat: `.venv` 우선 사용, 없으면 기존 conda 환경 `ai_label`
+- `.venv/` 깃허브 제외, `.bat` 파일 줄바꿈 CRLF 고정 (`.gitattributes`)
+- README 설치 방법 갱신
+- **tools/download_models.py**: AI 시작 가중치 자동 내려받기 (박스 AI, 키포인트 AI, YOLO11n-pose, `--all` = SAM 포함). 받는 주소 고정, 라벨링 PC 파일과 sha256 비교, 있으면 건너뜀
+- setup.bat 5단계로: 마지막에 모델 내려받기
+- 1번 탭 데이터셋 목록: 폴더가 한 번 더 감싸진 경우(`datasets\datasets\<이름>`, 압축 풀기 폴더)도 인식
+- README: VS Code 터미널 실행 방법(`.\setup.bat`), 깨진 uv 경로 표기 수정

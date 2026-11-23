@@ -17,6 +17,9 @@ models/**/*.safetensors
 models/*.pt
 models/**/.cache/
 
+# ── 웹 이미지 캡처가 들어간 참고 자료 (로컬에서만 보기) ──
+docs/fence_median_compare.jpg
+
 # ── PC마다 다른 파일 ──
 last_project.json
 
@@ -27,3 +30,6 @@ __pycache__/
 .idea/
 Thumbs.db
 desktop.ini
+
+# ── 가상환경 (PC마다 setup.bat 으로 새로 만듦, 복사해서 옮기면 동작 안 함) ──
+.venv/

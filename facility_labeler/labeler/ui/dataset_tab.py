@@ -52,12 +52,19 @@ def steps_html(title, steps):
 
 
 def find_datasets():
-    """datasets 폴더 안의 데이터셋 목록 (최근 수정 순)."""
+    """datasets 폴더 안의 데이터셋 목록 (최근 수정 순).
+
+    다른 PC로 복사할 때 폴더가 한 번 더 감싸진 경우(datasets\\datasets\\<이름>, 압축 풀기 폴더)도 찾음.
+    """
     out = []
     if DATASETS_DIR.exists():
         for d in DATASETS_DIR.iterdir():
+            if not d.is_dir():
+                continue
             if (d / "project.json").exists():
                 out.append(d)
+            else:                                    # 한 단계 아래까지
+                out += [s for s in d.iterdir() if s.is_dir() and (s / "project.json").exists()]
     return sorted(out, key=lambda d: (d / "labels").stat().st_mtime if (d / "labels").exists() else 0, reverse=True)
 
 

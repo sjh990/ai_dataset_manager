@@ -5,22 +5,33 @@
 
 ## 실행
 
-`run.bat` 더블클릭 (conda 환경 `ai_label` 사용)
-또는 `python main.py`
+`run.bat` 더블클릭 (`setup.bat`으로 만든 `.venv` 사용, 없으면 conda 환경 `ai_label`)
 
-### 처음 설치 (PC마다 한 번, Anaconda Prompt)
+### 처음 설치 (PC마다 한 번, 아나콘다 필요 없음)
 
-```
-conda create -n ai_label python=3.11 -y
-conda activate ai_label
-pip install torch==2.11.0 torchvision==0.26.0 --index-url https://download.pytorch.org/whl/cu128
-pip install -r requirements.txt
-```
+1. `setup.bat` 더블클릭 (인터넷 필요, 10~20분)
+   - VS Code 터미널(PowerShell)에서는 `.\setup.bat`
+   - NVIDIA GPU 없는 PC: `.\setup.bat cpu`
+2. 마지막에 `모델 준비 완료`, `Setup done` 이 나오면 `run.bat` (터미널에서는 `.\run.bat`)으로 실행
 
-- 패키지 목록과 버전: `requirements.txt`
+setup.bat 이 하는 일
+- `uv` 설치 (파이썬 + 패키지 설치 도구, 관리자 권한 필요 없음, `%USERPROFILE%\.local\bin`)
+- 이 폴더에 `.venv` 가상환경 만들기 (Python 3.11 자동 다운로드, PC에 파이썬 없어도 됨)
+- torch, torchvision (CUDA 12.8) → `requirements.txt` (라벨링 PC와 모든 패키지 버전 동일) 설치
+- `tools\check_env.py`로 설치 확인 (패키지 import, GPU 인식)
+- `tools\download_models.py`로 AI 시작 가중치 내려받기 (약 720MB, 라벨링 PC 파일과 같은지 sha256 확인, 이미 있으면 건너뜀)
+  - 박스 AI (RF-DETR Nano), 키포인트 AI (ViTPose Base), YOLO11n-pose
+  - SAM (시험 영상 도구 전용)은 `.venv\Scripts\python.exe tools\download_models.py --all`
+
+주의
+- `.venv` 폴더는 다른 PC로 복사해도 동작하지 않음. 코드만 옮기고 새 PC에서 `setup.bat` 다시 실행
+- 중간에 실패하면 `setup.bat` 다시 실행 (끝난 단계는 건너뜀). 설치가 꼬였을 때: `.venv` 폴더 삭제 후 다시 실행
+- GPU 인식 안 됨: NVIDIA 드라이버 최신 버전 설치 (CUDA 12.8 용 torch)
+
+- 패키지 목록: `requirements.txt` (위쪽 = 직접 쓰는 패키지, 아래쪽 = 하위 패키지, 모두 버전 고정)
 - 깃허브에 없는 것 (`.gitignore`로 제외, 구글 드라이브 등으로 따로 받기)
-  - `datasets\` 데이터셋 폴더, `raw_data\` 원본 영상
-  - `models\` 안의 AI 가중치 파일 (`.pth`, `.safetensors`, `.pt`, 하나가 100MB 넘음). 받는 곳은 각 폴더의 `_model_info.json`
+  - `datasets\` 데이터셋 폴더 (학습한 AI 포함), `raw_data\` 원본 영상
+  - `models\` 안의 AI 가중치 파일 → setup.bat 이 자동으로 받음 (받는 곳: `tools\download_models.py`)
 
 ## 용어
 - **데이터셋**: 영상에서 뽑은 이미지 + 라벨 + 학습한 AI 를 모아 둔 폴더 하나 (`datasets\<이름>`). 영상 여러 개를 한 데이터셋에 넣을 수 있습니다.
@@ -112,6 +123,7 @@ pip install -r requirements.txt
 
 ```
 main.py                  실행
+setup.bat, run.bat       처음 설치, 실행
 labeler/
   config.py              라벨링 기준 (클래스, 키포인트 이름, 가이드)
   project.py             데이터셋 폴더, 라벨 파일 읽기/쓰기, 진행 현황 (코드 이름은 Project)
