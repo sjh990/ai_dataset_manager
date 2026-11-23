@@ -6,6 +6,7 @@ import os
 import random
 import shutil
 import sys
+import time
 from pathlib import Path
 
 import numpy as np
@@ -15,9 +16,11 @@ from . import config as C
 from .ai_keypoint import get_device
 
 
-def make_dataset(items, out_dir, val_ratio=0.15, aug_copies=0, aug_settings=None):
+def make_dataset(items, out_dir, val_ratio=0.15, aug_copies=0, aug_settings=None, progress=None, log=print,
+                 should_stop=None):
     """RF-DETR 학습용 YOLO 형식 폴더를 만듭니다 (images/, labels/, data.yaml).
-    aug_copies: train 이미지 1장당 추가로 만들 증강 이미지 수 (val 은 원본만)."""
+    aug_copies: train 이미지 1장당 추가로 만들 증강 이미지 수 (val 은 원본만).
+    증강 이미지를 만드는 동안 진행률 표시 (이미지가 크면 몇 분 걸림), 중지 버튼으로 멈춤."""
     from . import augment as A
     from .frames import read_image, save_image
     rng_aug = random.Random(1)
@@ -28,10 +31,16 @@ def make_dataset(items, out_dir, val_ratio=0.15, aug_copies=0, aug_settings=None
         raise RuntimeError("박스 AI 학습에는 이미지 2장 이상 필요 (학습, 검증 각 1장 이상)")
     random.Random(0).shuffle(items)
     n_val = max(1, round(len(items) * val_ratio))
+    n_aug = (len(items) - n_val) * aug_copies
+    log(f"[박스 AI] 학습 데이터 준비: 원본 {len(items)}장"
+        + (f" + 증강 이미지 {n_aug}장 만들기 (이미지가 크면 몇 분 걸림)" if n_aug else ""))
+    done, t0 = 0, time.time()
     for split, part in (("val", items[:n_val]), ("train", items[n_val:])):
         (out_dir / "images" / split).mkdir(parents=True)
         (out_dir / "labels" / split).mkdir(parents=True)
         for img, lab in part:
+            if should_stop and should_stop():
+                raise RuntimeError("사용자 중지 (학습 데이터 준비 중)")
             dst = out_dir / "images" / split / img.name
             try:
                 os.link(img, dst)          # 복사 대신 링크 (디스크 절약)
@@ -46,6 +55,11 @@ def make_dataset(items, out_dir, val_ratio=0.15, aug_copies=0, aug_settings=None
                     stem = f"{img.stem}_aug{k + 1}"
                     save_image(out_dir / "images" / split / f"{stem}.jpg", a_img)
                     _write_label(out_dir / "labels" / split / f"{stem}.txt", a_objs, w, h)
+            done += 1
+            if progress:
+                progress(done, len(items), f"박스 AI 학습 데이터 준비 (증강) {done}/{len(items)}장")
+            if n_aug and done % 50 == 0:
+                log(f"[박스 AI] 학습 데이터 준비 {done}/{len(items)}장 ({time.time() - t0:.0f}초)")
     data = {"path": str(out_dir).replace("\\", "/"), "train": "images/train", "val": "images/val",
             "nc": len(C.CLASSES), "names": {i: k for i, k in enumerate(C.CLASS_KEYS)}}
     (out_dir / "data.yaml").write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
@@ -75,7 +89,8 @@ def train(items, out_dir, epochs=50, batch=2, device="auto", val_ratio=0.15, pro
         except Exception:
             pass
     out_dir = Path(out_dir)
-    n_train, n_val = make_dataset(items, out_dir / "dataset", val_ratio, aug_copies, aug_settings)
+    n_train, n_val = make_dataset(items, out_dir / "dataset", val_ratio, aug_copies, aug_settings,
+                                  progress=progress, log=log, should_stop=should_stop)
     device = get_device(device)
     log(f"[박스 AI] 학습 이미지 {n_train}장 (증강 포함, 원본 1장당 {aug_copies}장 추가) / 검증 이미지 {n_val}장, device {device}")
     weights = C.BOX_BASE_WEIGHTS if C.BOX_BASE_WEIGHTS.exists() else None

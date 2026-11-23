@@ -3,7 +3,12 @@
 사용법: .venv\\Scripts\\python.exe tools\\check_env.py   (setup.bat 이 마지막에 자동 실행)
 """
 import importlib
+import logging
 import sys
+
+# 윈도우에서 torch 가 띄우는 경고 숨김 (labeler/__init__.py 와 같음)
+for _name in ("torch.utils.flop_counter", "torch.distributed.elastic.multiprocessing.redirects"):
+    logging.getLogger(_name).setLevel(logging.ERROR)
 
 # (import 이름, 쓰는 곳)
 PACKAGES = [
