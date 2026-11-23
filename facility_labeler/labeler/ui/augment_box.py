@@ -10,7 +10,7 @@ from PySide6.QtWidgets import (QCheckBox, QComboBox, QDialog, QGridLayout, QGrou
 from .. import augment as A
 from .. import config as C
 from ..frames import read_image
-from .common import note
+from .common import note, text_label
 
 
 class AugmentBox(QGroupBox):
@@ -104,7 +104,7 @@ class AugmentBox(QGroupBox):
         if not items:
             QMessageBox.information(self, "미리보기", "시설물이 있는 '사람 검수 완료' 이미지가 있어야 미리보기 가능")
             return
-        PreviewDialog(items, self.settings(), self).exec()
+        PreviewDialog(items, self.settings(), self.copies.value(), self).exec()
 
 
 def draw(img, objects):
@@ -130,21 +130,27 @@ def draw(img, objects):
 
 
 class PreviewDialog(QDialog):
-    """원본 1장 + 증강 5장을 박스, 키포인트와 함께 보여 줌. '다른 이미지'로 바꿔 보기."""
+    """원본 1장 + 증강 예시 5장을 박스, 키포인트와 함께 보여 줌. '다른 이미지'로 바꿔 보기.
 
-    def __init__(self, items, settings, parent=None):
+    예시 장수(5장)는 설정한 증강 장수와 상관없이 고정 (무작위라 여러 장을 봐야 바뀌는 범위를 알 수 있음).
+    """
+
+    def __init__(self, items, settings, copies, parent=None):
         super().__init__(parent)
         self.setWindowTitle("증강 미리보기 (박스, 키포인트도 같이 바뀌는지 확인)")
         self.resize(1300, 760)
         self.items, self.settings = items, settings
         lay = QVBoxLayout(self)
+        real = (f"실제 학습, 내보내기: 원본 1장당 증강 <b>{copies}장</b> (아래 예시처럼 매번 무작위)" if copies else
+                "실제 학습, 내보내기: 증강 <b>0장</b> (증강하지 않음, 아래는 설정 확인용 예시)")
+        lay.addWidget(text_label(f"<b>증강 예시 5장</b> (설정한 장수와 상관없이 항상 5장, 바뀌는 범위 확인용) / {real}"))
         self.grid = QGridLayout()
         lay.addLayout(self.grid)
         self.labels = []
         for i in range(6):
             lb = QLabel()
             lb.setAlignment(Qt.AlignCenter)
-            cap = QLabel("원본" if i == 0 else f"증강 {i}")
+            cap = QLabel("원본" if i == 0 else f"증강 예시 {i}")
             cap.setAlignment(Qt.AlignCenter)
             box = QVBoxLayout()
             box.addWidget(lb, 1)
