@@ -57,7 +57,10 @@ class RangeBar(QWidget):
 
 
 class TrimDialog(QDialog):
-    """사용법: dlg = TrimDialog(영상경로, 시작초, 끝초); if dlg.exec(): dlg.start_sec, dlg.end_sec"""
+    """사용법: dlg = TrimDialog(영상경로, 시작초, 끝초); if dlg.exec(): dlg.start_sec, dlg.end_sec
+
+    every_sec=None: 영상 추론용 (몇 장 대신 프레임 수 표시)
+    """
 
     def __init__(self, video_path, start_sec=0.0, end_sec=None, every_sec=0.5, parent=None):
         super().__init__(parent)
@@ -116,7 +119,8 @@ class TrimDialog(QDialog):
         lay.addWidget(note("<b>이동</b>: 막대 클릭 또는 끌기<br>"
                            "<b>구간 지정</b>: 쓸 구간 처음에서 '여기를 시작으로', 마지막에서 '여기를 끝으로'<br>"
                            "<b>단축키</b>: Space 재생/정지, ← → 1초, Shift + ← → 10초, S 시작, E 끝<br>"
-                           "<b>결과</b>: 프레임 추출 때 파란 구간만 사용 (영상 파일은 그대로)"))
+                           + ("<b>결과</b>: 프레임 추출 때 파란 구간만 사용 (영상 파일은 그대로)" if every_sec else
+                              "<b>결과</b>: 영상 추론 때 파란 구간만 추론 (영상 파일은 그대로)")))
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         buttons.button(QDialogButtonBox.Ok).setText("이 구간으로 정하기")
         buttons.button(QDialogButtonBox.Cancel).setText("취소")
@@ -172,10 +176,14 @@ class TrimDialog(QDialog):
         self.bar.start, self.bar.end = self.start, self.end
         self.bar.update()
         length = (self.end - self.start) / self.fps
-        step = max(1, round(self.every * self.fps))
-        count = len(range(-(-self.start // step) * step, self.end + 1, step))
+        if self.every:
+            step = max(1, round(self.every * self.fps))
+            count = len(range(-(-self.start // step) * step, self.end + 1, step))
+            amount = f"{self.every}초 간격이면 약 <b>{count}장</b>"
+        else:
+            amount = f"<b>{self.end - self.start + 1}프레임</b> 추론"
         self.range_text.setText(f"쓸 구간: <b>{mmss(self.start / self.fps)} ~ {mmss(self.end / self.fps)}</b>  "
-                                f"(길이 {length:.1f}초, {self.every}초 간격이면 약 <b>{count}장</b>)  "
+                                f"(길이 {length:.1f}초, {amount})  "
                                 f"<span style='color:#666'>영상 전체 {self.n / self.fps:.1f}초</span>")
 
     # ---------- 버튼 ----------

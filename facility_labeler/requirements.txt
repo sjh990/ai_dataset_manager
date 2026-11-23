@@ -1,6 +1,6 @@
 # 시설물 라벨링 툴 패키지 (Python 3.11, 라벨링 PC에서 동작 확인된 버전)
 #
-# 설치는 setup.bat 더블클릭 (아나콘다 필요 없음). setup.bat 이 이 파일로 설치합니다.
+# 설치는 setup.bat 더블클릭 (어떤 윈도우 PC에서도 설치 가능). setup.bat 이 이 파일로 설치합니다.
 # torch, torchvision 은 GPU(CUDA 12.8)용을 setup.bat 이 먼저 따로 설치하므로 여기에 없습니다.
 #   torch==2.11.0  torchvision==0.26.0  (--index-url https://download.pytorch.org/whl/cu128)
 #

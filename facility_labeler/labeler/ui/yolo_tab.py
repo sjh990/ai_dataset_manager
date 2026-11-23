@@ -2,16 +2,27 @@
 from pathlib import Path
 
 from PySide6.QtWidgets import (QComboBox, QDoubleSpinBox, QFileDialog, QFormLayout, QGroupBox, QHBoxLayout,
-                               QLineEdit, QMessageBox, QPushButton, QSpinBox, QTableWidget, QTableWidgetItem,
+                               QLabel, QLineEdit, QMessageBox, QPushButton, QSpinBox, QTableWidget, QTableWidgetItem,
                                QVBoxLayout, QWidget)
 
 from .. import yolo
 from .common import RunPanel, note, open_folder, text_label
+from .trim_dialog import TrimDialog, mmss
 
 STEPS = ("<b>사용 순서</b><ol>"
          "<li><b>YOLO 데이터셋 준비</b>: 4번 탭에서 내보내기, 또는 받은 데이터셋의 data.yaml</li>"
          "<li><b>YOLO 학습</b>: 학습 데이터 선택, 모델 크기, epoch, 시작</li>"
-         "<li><b>영상 추론</b>: 학습한 모델, 영상 선택, 시작 → 박스, 키포인트를 그린 결과 영상</li></ol>")
+         "<li><b>영상 추론</b>: 학습한 모델, 영상 선택, (구간 정하기), 시작 → 박스, 키포인트를 그린 결과 영상</li></ol>")
+
+
+def range_tag(start_sec, end_sec):
+    """결과 파일 이름에 붙일 구간 글자 (예: 60, 125 → _1m00s_2m05s). 전체면 빈 글자."""
+    if not start_sec and end_sec is None:
+        return ""
+    def ms(s):
+        s = int(round(s))
+        return f"{s // 60}m{s % 60:02d}s"
+    return f"_{ms(start_sec)}_{'end' if end_sec is None else ms(end_sec)}"
 
 
 def spin(value, lo, hi, step=1):
@@ -27,6 +38,7 @@ class YoloTab(QWidget):
         super().__init__()
         self.main = main
         self.video = None
+        self.range = (0.0, None)             # 추론 구간 (시작 초, 끝 초 / None = 영상 끝)
         self.last_video_out = None
         lay = QHBoxLayout(self)
         left, right = QVBoxLayout(), QVBoxLayout()
@@ -85,6 +97,16 @@ class YoloTab(QWidget):
         b_vid.clicked.connect(self.pick_video)
         vrow.addWidget(self.video_edit, 1)
         vrow.addWidget(b_vid)
+        rrow = QHBoxLayout()
+        self.range_label = QLabel("전체")
+        self.btn_range = QPushButton("구간 정하기...")
+        self.btn_range.setEnabled(False)
+        self.btn_range.clicked.connect(self.pick_range)
+        b_full = QPushButton("전체로")
+        b_full.clicked.connect(lambda: self.set_range(0.0, None))
+        rrow.addWidget(self.range_label, 1)
+        rrow.addWidget(self.btn_range)
+        rrow.addWidget(b_full)
         self.conf = QDoubleSpinBox()
         self.conf.setRange(0.05, 0.95)
         self.conf.setSingleStep(0.05)
@@ -100,9 +122,12 @@ class YoloTab(QWidget):
         prow.addWidget(self.btn_play)
         f.addRow("모델", mrow)
         f.addRow("영상", vrow)
+        f.addRow("구간", rrow)
         f.addRow("conf threshold", self.conf)
-        f.addRow(note("<b>conf threshold</b>: 점수가 이 값 이상인 객체만 표시 (놓치면 낮춤, 엉뚱한 탐지가 많으면 높임)<br>"
-                      "<b>결과</b>: &lt;데이터셋&gt;/yolo_predict/ 에 결과 영상(.mp4)과 프레임별 결과(.json)"))
+        f.addRow(note("<b>구간</b>: 영상을 보면서 추론할 시작(S)과 끝(E) 지정 (기본 전체, 영상을 바꾸면 전체로)<br>"
+                      "<b>conf threshold</b>: 점수가 이 값 이상인 객체만 표시 (놓치면 낮춤, 엉뚱한 탐지가 많으면 높임)<br>"
+                      "<b>결과</b>: &lt;데이터셋&gt;/yolo_predict/ 에 결과 영상(.mp4)과 프레임별 결과(.json), "
+                      "구간이면 파일 이름에 구간 표시 (예: _1m00s_2m05s)"))
         f.addRow(prow)
         left.addWidget(g)
         left.addStretch(1)
@@ -186,6 +211,26 @@ class YoloTab(QWidget):
         if file:
             self.video = file
             self.video_edit.setText(Path(file).name)
+            self.btn_range.setEnabled(True)
+            self.set_range(0.0, None)
+
+    def pick_range(self):
+        if not self.video:
+            return
+        try:
+            dlg = TrimDialog(self.video, self.range[0], self.range[1], every_sec=None, parent=self)
+        except RuntimeError as e:
+            QMessageBox.warning(self, "영상 열기 실패", str(e))
+            return
+        if dlg.exec():
+            self.set_range(dlg.start_sec, dlg.end_sec)
+
+    def set_range(self, start_sec, end_sec):
+        self.range = (start_sec, end_sec)
+        if not start_sec and end_sec is None:
+            self.range_label.setText("전체")
+        else:
+            self.range_label.setText(f"{mmss(start_sec)} ~ {'끝' if end_sec is None else mmss(end_sec)}")
 
     # ---------- 실행 ----------
     def _busy(self, on):
@@ -216,8 +261,11 @@ class YoloTab(QWidget):
         if not weights or not self.video:
             QMessageBox.information(self, "선택 필요", "모델과 영상 선택 필요")
             return
-        out = p.root / "yolo_predict" / f"{Path(self.video).stem}_{Path(weights).parent.parent.name}.mp4"
-        args = dict(conf=self.conf.value(), imgsz=self.imgsz.value(), device=self.device.currentData())
+        start_sec, end_sec = self.range
+        out = p.root / "yolo_predict" / (f"{Path(self.video).stem}_{Path(weights).parent.parent.name}"
+                                         f"{range_tag(start_sec, end_sec)}.mp4")
+        args = dict(conf=self.conf.value(), imgsz=self.imgsz.value(), device=self.device.currentData(),
+                    start_sec=start_sec, end_sec=end_sec)
         video = self.video
         self._busy(True)
         self.run.text.clear()

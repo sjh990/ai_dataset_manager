@@ -114,6 +114,9 @@
   - 결과: `<데이터셋>/yolo/<날짜>/weights/best.pt`, `yolo_info.json`, `train_log.txt`
 - **영상 추론**: 박스, 키포인트를 그린 결과 영상(mp4) + 프레임별 결과(json) → `<데이터셋>/yolo_predict/`
 - ultralytics 8.4.216 설치 (기존 패키지 버전 유지), `models/yolo11n-pose.pt`
+- **영상 추론 구간 정하기**: 1번 탭과 같은 구간 자르기 창으로 시작(S), 끝(E) 지정 (기본 전체, 영상 바꾸면 전체로, '전체로' 버튼)
+  - 결과 파일 이름에 구간 표시 (예: `DJI_0342_<모델>_1m00s_2m05s.mp4`, 끝까지면 `_end`), 구간마다 따로 저장
+  - 프레임별 결과 json: 원본 영상 기준 프레임 번호, `range_sec` (추론 구간) 추가
 
 ## 증강 (3번 AI 학습, 4번 내보내기 공용)
 - 드론 도로 영상용 증강 옵션 12가지: 크기(고도), 이동(경로), 회전(기체 흔들림), 원근(짐벌 각도), 밝기/대비(시간대),
@@ -152,7 +155,7 @@
 - 깃허브 업로드: 팀 레포 `sjh990/ai_dataset_manager` 의 `add-facility-labeler` 브랜치(`facility_labeler/` 폴더), 개인 레포 `sswwd95/facility_labeler` (Private, 이 폴더가 원본)
 - `docs/fence_median_compare.jpg` (펜스, 분리대 비교 이미지, 웹 캡처 포함) 는 업로드 제외
 
-## 다른 PC 설치 (아나콘다 없이)
+## 다른 PC 설치 (어떤 윈도우 PC에서도 설치 가능)
 - 새 PC에서 박스 AI 학습 때 `pytorch_lightning` 없음 에러 수정: requirements.txt 의 `rfdetr` → `rfdetr[train]` (학습용 추가 패키지 포함)
 - **setup.bat**: 더블클릭 한 번으로 설치 (uv 설치 → `.venv` Python 3.11 → torch CUDA 12.8 → 패키지), `setup.bat cpu` = GPU 없는 PC
 - **requirements.txt** 하나로 통합: 라벨링 PC 환경의 모든 패키지 버전 고정 (위쪽 = 직접 쓰는 패키지, 아래쪽 = 하위 패키지, PC마다 같은 버전 설치)
@@ -164,3 +167,4 @@
 - setup.bat 5단계로: 마지막에 모델 내려받기
 - 1번 탭 데이터셋 목록: 폴더가 한 번 더 감싸진 경우(`datasets\datasets\<이름>`, 압축 풀기 폴더)도 인식
 - README: VS Code 터미널 실행 방법(`.\setup.bat`), 깨진 uv 경로 표기 수정
+- 설치 안내 문구: '아나콘다 필요 없음' → '어떤 윈도우 PC에서도 설치 가능'

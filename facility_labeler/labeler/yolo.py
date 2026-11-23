@@ -134,8 +134,11 @@ def _color(name):
 
 
 def predict_video(weights, video, out_path, conf=0.25, imgsz=640, device="auto", progress=None, log=print,
-                  should_stop=None):
-    """영상 전체를 추론해서 박스, 키포인트를 그린 결과 영상 저장. 프레임별 결과는 같은 이름의 .json 으로."""
+                  should_stop=None, start_sec=0.0, end_sec=None):
+    """영상을 추론해서 박스, 키포인트를 그린 결과 영상 저장. 프레임별 결과는 같은 이름의 .json 으로.
+
+    start_sec, end_sec: 추론할 구간 (초, end_sec=None 이면 영상 끝까지). json 의 frame 은 원본 영상 기준 번호.
+    """
     from ultralytics import YOLO
     _utf8_console()
     info = video_info(video)
@@ -150,10 +153,16 @@ def predict_video(weights, video, out_path, conf=0.25, imgsz=640, device="auto",
     tmp_out = out_path.with_name("_writing.mp4")          # 한글 경로 대비: 영문 임시 이름으로 쓰고 나중에 이름 변경
     writer = cv2.VideoWriter(str(tmp_out), cv2.VideoWriter_fourcc(*"mp4v"), info["fps"],
                              (info["width"], info["height"]))
-    log(f"[추론] {Path(video).name}: {info['frames']}프레임, conf {conf}, imgsz {imgsz}")
+    first = min(max(0, int(round(start_sec * info["fps"]))), info["frames"] - 1)
+    last = info["frames"] - 1 if end_sec is None else min(info["frames"] - 1, int(round(end_sec * info["fps"])))
+    total = max(1, last - first + 1)
+    if first > 0:
+        cap.set(cv2.CAP_PROP_POS_FRAMES, first)
+    rng = "전체" if first == 0 and last == info["frames"] - 1 else         f"구간 {first / info['fps']:.1f}초 ~ {last / info['fps']:.1f}초"
+    log(f"[추론] {Path(video).name}: {rng}, {total}프레임 (영상 전체 {info['frames']}프레임), conf {conf}, imgsz {imgsz}")
     frames, n, t0 = [], 0, time.time()
     try:
-        while True:
+        while n < total:
             if should_stop and should_stop():
                 log("[추론] 사용자 중지 (여기까지 저장)")
                 break
@@ -163,10 +172,10 @@ def predict_video(weights, video, out_path, conf=0.25, imgsz=640, device="auto",
             r = model.predict(img, conf=conf, imgsz=imgsz, device=dev, verbose=False)[0]
             objs = _draw(img, r)
             writer.write(img)
-            frames.append({"frame": n, "objects": objs})
+            frames.append({"frame": first + n, "objects": objs})
             n += 1
-            if progress and (n % 5 == 0 or n == info["frames"]):
-                progress(n, info["frames"], f"추론 {n}/{info['frames']} 프레임 ({n / max(time.time() - t0, 1e-6):.1f} fps)")
+            if progress and (n % 5 == 0 or n == total):
+                progress(n, total, f"추론 {n}/{total} 프레임 ({n / max(time.time() - t0, 1e-6):.1f} fps)")
     finally:
         cap.release()
         writer.release()
@@ -178,6 +187,8 @@ def predict_video(weights, video, out_path, conf=0.25, imgsz=640, device="auto",
     tmp_out.rename(out_path)
     found = sum(1 for f in frames if f["objects"])
     out_path.with_suffix(".json").write_text(json.dumps({"video": str(video), "weights": str(weights), "conf": conf,
+                                                         "range_sec": [round(first / info["fps"], 2),
+                                                                       round(last / info["fps"], 2)],
                                                          "frames": frames}, ensure_ascii=False), encoding="utf-8")
     log(f"[추론] 완료: {n}프레임 중 {found}프레임에서 탐지, 평균 {n / max(time.time() - t0, 1e-6):.1f} fps\n → {out_path}")
     return out_path

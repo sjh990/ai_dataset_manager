@@ -1,6 +1,6 @@
 @echo off
 rem ============================================================
-rem  Facility labeling tool - first-time setup (no Anaconda needed)
+rem  Facility labeling tool - first-time setup (works on any Windows PC)
 rem
 rem  Double-click once per PC. Creates .venv in this folder with
 rem  Python 3.11 + all packages (same versions as the labeling PC),
