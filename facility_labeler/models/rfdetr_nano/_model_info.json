@@ -1,0 +1,5 @@
+{
+  "url": "https://storage.googleapis.com/rfdetr/nano_coco/checkpoint_best_regular.pth",
+  "license": "Apache-2.0",
+  "name": "RF-DETR Nano (detect)"
+}

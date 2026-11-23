@@ -1,0 +1,27 @@
+# 시설물 라벨링 툴 패키지 (conda 환경 ai_label, Python 3.11, 현재 라벨링 PC에서 동작 확인된 버전)
+#
+# 설치 순서 (Anaconda Prompt):
+#   conda create -n ai_label python=3.11 -y
+#   conda activate ai_label
+#   pip install torch==2.11.0 torchvision==0.26.0 --index-url https://download.pytorch.org/whl/cu128
+#   pip install -r requirements.txt
+#
+# torch, torchvision 은 GPU(CUDA 12.8)용을 위 명령으로 먼저 설치 (그냥 pip install 하면 CPU 버전이 깔림)
+
+# 화면
+PySide6==6.12.0
+
+# 이미지, 영상
+opencv-python-headless==4.14.0.94   # headless: PySide6 와 Qt 충돌 방지 (opencv-python 대신)
+numpy==2.4.6
+pillow==13.0.0
+PyYAML==6.0.3
+
+# 라벨링용 AI
+transformers==5.22.1    # 키포인트 AI (ViTPose), 시험 영상용 SAM
+safetensors==0.8.0
+accelerate==1.15.0
+rfdetr==1.11.2          # 박스 AI (RF-DETR Nano)
+
+# 5번 탭 YOLO 학습 / 추론 (AGPL-3.0)
+ultralytics==8.4.216
