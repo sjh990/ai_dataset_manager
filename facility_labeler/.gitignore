@@ -1,0 +1,35 @@
+# ── 데이터 (깃허브에 올리지 않음, 구글 드라이브 등으로 공유) ──
+# 데이터셋 폴더: 프레임 이미지, 라벨, 학습한 AI, 내보낸 YOLO 데이터셋
+datasets/
+# 원본 영상
+raw_data/
+*.mp4
+*.MP4
+*.mov
+*.MOV
+*.avi
+
+# ── AI 가중치 (파일 하나가 100MB 넘음, 깃허브 업로드 불가) ──
+# 각 폴더의 _model_info.json, config.json 은 올림 (어디서 받는지 기록)
+models/**/*.pth
+models/**/*.pt
+models/**/*.safetensors
+models/*.pt
+models/**/.cache/
+
+# ── 웹 이미지 캡처가 들어간 참고 자료 (로컬에서만 보기) ──
+docs/fence_median_compare.jpg
+
+# ── PC마다 다른 파일 ──
+last_project.json
+
+# ── 파이썬, 편집기 ──
+__pycache__/
+*.py[cod]
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+
+# ── 가상환경 (PC마다 setup.bat 으로 새로 만듦, 복사해서 옮기면 동작 안 함) ──
+.venv/
